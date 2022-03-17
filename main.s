@@ -2,7 +2,7 @@
 
 extrn	UART_Setup, UART_Transmit_Message, UART_Transmit_Byte  ; external subroutines
 extrn	LCD_Setup, LCD_Write_Message, LCD_Clear, LCD_Shift, LCD_delay_ms,  LCD_Write_Hex
-extrn	KPD_READ, write_var, depressed, pass_set
+extrn	KPD_READ, write_var, depressed, pass_set, Decode_r
 extrn	ADC_Setup, ADC_Read		   ; external ADC subroutines
 extrn	Multiply_16bit, Multiply_824bit 
 extrn	PIR_Setup    
@@ -89,7 +89,56 @@ start:	lfsr	0, myArray	; Load FSR0 with address in RAM
 	movlw 40
 	call LCD_delay_ms
 	call Password_Setup
-	call Welcome
+	call EEPROM_Read
+	movwf 0x070, A
+	movlw 0xFF
+	cpfseq 0x070, A
+	bra Enter_Password
+	bra Set_Password
+Enter_Password:
+    call EP
+    call LCD_Shift
+Pass_read:    
+    call KPD_READ
+    movlw 40
+    call LCD_delay_ms
+    movlw 40
+    call LCD_delay_ms
+    movlw 0x00
+    cpfseq write_var, A
+    call KPD_Check
+    movlw 0x2A
+    cpfseq Decode_r
+    bra Pass_read
+    bra Success_message
+    
+Set_Password:
+    call SP
+    call LCD_Shift
+Pass_set:    
+    call KPD_READ
+    movlw 40
+    call LCD_delay_ms
+    ;call LCD_Clear
+    movlw 40
+    call LCD_delay_ms
+    movlw 0x00
+    cpfseq write_var, A
+    call KPD_Check
+    movlw 0x2A
+    cpfseq Decode_r
+    bra Pass_set
+    bra Success_message
+    
+Success_message:
+    call LCD_Clear
+    movlw 40
+    call LCD_delay_ms
+    call Welcome
+    call KPD_READ
+    goto $
+    ;cpfseq 0
+    
 KPD_func:
 	call KPD_READ
 	movlw 0xF0
@@ -113,9 +162,9 @@ KPD_Check:
     movlw 0x01 
     movwf depressed, A
     incf Password_Counter
-    cpfseq pass_set
+    movlw 0x2A
     return
-Set_Prompt:
+
     
 	; ******* Main programme ****************************************
 
