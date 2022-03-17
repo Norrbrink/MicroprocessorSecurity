@@ -1,6 +1,6 @@
 #include <xc.inc>
     
-global  KPD_READ, write_var, depressed, pass_set
+global  KPD_READ, write_var, depressed, pass_set, Decode_r
 
 
 psect	udata_acs   ; reserve data space in access ram
@@ -14,6 +14,7 @@ delay_count_1: ds 1
 write_var: ds 1
 depressed: ds 1
 pass_set: ds 1
+
     
 psect	data 
 c1:
