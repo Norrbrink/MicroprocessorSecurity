@@ -1,6 +1,6 @@
 #include <xc.inc>
 
-global SP, EP, AO, SO, S, Welcome
+global SP, EP, AO, SO, S, Welcome, WM, SecurityON, WP
     
 extrn LCD_Write_Message2 
 
@@ -40,6 +40,39 @@ Set1:
 					; message, plus carriage return
 	myTable_5   EQU	15	; length of data   
 	align	2
+
+Welcome_Message:
+    db 'W','E','L','C','O','M','E',0x0a
+    ; message, plus carriage return
+    myTable_6 EQU 8 ; length of data
+    align 2
+
+Alarm_Set:
+db 'A','L','A','R','M',' ','S','E','T',0x0a
+; message, plus carriage return
+myTable_7 EQU 10 ; length of data
+align 2
+
+
+
+Security_On:
+db 'S','E','C','U','R','I','T','Y',' ','O','N',0x0a
+; message, plus carriage return
+myTable_8 EQU 12 ; length of data
+align 2
+
+CorrectPassword:
+db 'C','O','R','R','E','C','T',' ','P','A','S','S','W','O','R','D',0x0a
+; message, plus carriage return
+myTable_9 EQU 17 ; length of data
+align 2
+
+WrongPassword:
+db 'W','R','O','N','G',' ','P','A','S','S','W','O','R','D',0x0a
+; message, plus carriage return
+myTable_10 EQU 15 ; length of data
+align 2
+	
 	
 psect prompt_code, class=CODE	
 SP:	
@@ -111,6 +144,33 @@ S:
 	movwf 	prompt_counter, A		; our counter register
 	movwf	prompt_counter_1, A
 	bra	loop_1
+WM:	
+	lfsr	0, myArray2	; Load FSR0 with address in RAM	
+	movlw	low highword(Welcome_Message)	; address of data in PM
+	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
+	movlw	high(Welcome_Message)	; address of data in PM
+	movwf	TBLPTRH, A		; load high byte to TBLPTRH
+	movlw	low(Welcome_Message)	; address of data in PM
+	movwf	TBLPTRL, A		; load low byte to TBLPTRL
+	movlw	myTable_6	; bytes to read
+	addlw	0xFF
+	movwf 	prompt_counter, A		; our counter register
+	movwf	prompt_counter_1, A
+	bra	loop_1
+WP:	
+	lfsr	0, myArray2	; Load FSR0 with address in RAM	
+	movlw	low highword(WrongPassword)	; address of data in PM
+	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
+	movlw	high(WrongPassword)	; address of data in PM
+	movwf	TBLPTRH, A		; load high byte to TBLPTRH
+	movlw	low(WrongPassword)	; address of data in PM
+	movwf	TBLPTRL, A		; load low byte to TBLPTRL
+	movlw	myTable_10	; bytes to read
+	addlw	0xFF
+	movwf 	prompt_counter, A		; our counter register
+	movwf	prompt_counter_1, A
+	bra	loop_1
+	
 
 loop_1: 	tblrd*+			; one byte from PM to TABLAT, increment TBLPRT
 	movff	TABLAT, POSTINC0; move data from TABLAT to (FSR0), inc FSR0	
@@ -124,5 +184,19 @@ loop_1: 	tblrd*+			; one byte from PM to TABLAT, increment TBLPRT
 	return
 
 Welcome:
-    call SO
+    call WM
     return
+    
+SecurityON:
+lfsr 0, myArray2 ; Load FSR0 with address in RAM
+movlw low highword(Security_On) ; address of data in PM
+movwf TBLPTRU, A ; load upper bits to TBLPTRU
+movlw high(Security_On) ; address of data in PM
+movwf TBLPTRH, A ; load high byte to TBLPTRH
+movlw low(Security_On) ; address of data in PM
+movwf TBLPTRL, A ; load low byte to TBLPTRL
+movlw myTable_8 ; bytes to read
+addlw 0xFF
+movwf prompt_counter, A ; our counter register
+movwf prompt_counter_1, A
+bra loop_1

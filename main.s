@@ -2,17 +2,20 @@
 
 extrn	UART_Setup, UART_Transmit_Message, UART_Transmit_Byte  ; external subroutines
 extrn	LCD_Setup, LCD_Write_Message, LCD_Clear, LCD_Shift, LCD_delay_ms,  LCD_Write_Hex
-extrn	KPD_READ, write_var, depressed, pass_set, Decode_r
+extrn	KPD_READ, write_var, depressed, pass_set, Decode_r, previous_pressed
 extrn	ADC_Setup, ADC_Read		   ; external ADC subroutines
 extrn	Multiply_16bit, Multiply_824bit 
 extrn	PIR_Setup    
 extrn	EEPROM_Write, EEPROM_Read, DATA_EE_ADDRH, DATA_EE_ADDR, DATA_EE_DATA, Password_Counter, Password_Setup
-extrn	SP, EP, AO, SO, S, Welcome
+extrn	SP, EP, AO, SO, S, Welcome, WM, SecurityON, WP
     
 psect	udata_acs   ; reserve data space in access ram
 counter:    ds 1    ; reserve one byte for a counter variable
 delay_count: ds 1    ; reserve one byte for counter in the delay routine
 UART_counter: ds    1
+counter2: ds 1
+pass_0_counter: ds 1
+pass_1_counter: ds 1
     
 psect	udata_bank4 ; reserve data anywhere in RAM (here at 0x400)
 myArray:    ds 0x80 ; reserve 128 bytes for message data
@@ -92,52 +95,146 @@ start:	lfsr	0, myArray	; Load FSR0 with address in RAM
 	call EEPROM_Read
 	movwf 0x070, A
 	movlw 0xFF
-	cpfseq 0x070, A
-	bra Enter_Password
+	;cpfseq 0x070, A
+	;bra Enter_Password
 	bra Set_Password
-Enter_Password:
-    call EP
-    call LCD_Shift
-Pass_read:    
-    call KPD_READ
-    movlw 40
-    call LCD_delay_ms
-    movlw 40
-    call LCD_delay_ms
-    movlw 0x00
-    cpfseq write_var, A
-    call KPD_Check
-    movlw 0x2A
-    cpfseq Decode_r
-    bra Pass_read
-    bra Success_message
-    
+
 Set_Password:
+    call LCD_Clear
+    movlw 40
+    call LCD_delay_ms
     call SP
     call LCD_Shift
+    lfsr 1, 0x0B0
+    movlw 0x00
+    movwf pass_1_counter, A
+    movlw 0xFF
+    movwf previous_pressed, A
 Pass_set:    
     call KPD_READ
     movlw 40
     call LCD_delay_ms
-    ;call LCD_Clear
-    movlw 40
-    call LCD_delay_ms
+    movf previous_pressed, W, A
+    cpfseq Decode_r, A
+    bra Pass_Write
+    bra Pass_set
+Pass_Write:
     movlw 0x00
     cpfseq write_var, A
     call KPD_Check
+    movlw 0x00
+    cpfseq write_var, A
+    movff Decode_r, POSTINC1, A
+    movlw 0x00
+    cpfseq write_var, A
+    incf pass_1_counter, A
+    movff Decode_r, previous_pressed, A
     movlw 0x2A
-    cpfseq Decode_r
+    cpfseq Decode_r, A
     bra Pass_set
-    bra Success_message
-    
-Success_message:
+    bra Enter_Password
+    ;bra Success_message
+
+
+Enter_Password:
     call LCD_Clear
     movlw 40
     call LCD_delay_ms
-    call Welcome
+    call EP
+    call LCD_Shift
+    lfsr 0, 0x0A0
+    movlw 0x00
+    movwf pass_0_counter, A
+    ;movlw 0xFF
+    ;movwf previous_pressed, A
+    ;movwf Decode_r
+Pass_set2:    
     call KPD_READ
-    goto $
-    ;cpfseq 0
+    movlw 40
+    call LCD_delay_ms
+    movf previous_pressed, W, A
+    cpfseq Decode_r, A
+    bra Pass_Write2
+    bra Pass_set2
+Pass_Write2:
+    movlw 0x00
+    cpfseq write_var, A
+    call KPD_Check
+    movlw 0x00
+    cpfseq write_var, A
+    movff Decode_r, POSTINC0, A
+    movlw 0x00
+    cpfseq write_var, A
+    incf pass_0_counter, A
+    movff Decode_r, previous_pressed, A
+    movlw 0x2A
+    cpfseq Decode_r, A
+    bra Pass_set2
+    bra Pass_Check
+    
+    
+
+    
+Success_message: ;Welcome Message and prompt to further actions
+call LCD_Clear
+movlw 40
+call LCD_delay_ms
+call Welcome
+movlw 0x05
+movwf counter2, A
+call double_delay
+call SetAP_Prompt
+call KPD_READ
+goto $
+;cpfseq 0
+SetAP_Prompt: ;Set Alarm or New Password Prompt
+call LCD_Clear
+movlw 40
+call LCD_delay_ms
+call AO ;Set alarm
+call LCD_Shift ;Shifts onto new line
+call SO ;Set new password
+bra SetAP1
+goto $
+
+
+
+SetAP1: ;Checks for Alarm Input
+call KPD_READ
+movlw 40
+call LCD_delay_ms
+;call LCD_Clear
+movlw 40
+call LCD_delay_ms
+movlw 0x00
+cpfseq write_var, A
+call KPD_Check
+movlw 0x23
+cpfseq Decode_r, A
+bra SetAP2
+bra AlarmSet
+
+SetAP2:
+movlw 0x2A
+cpfseq Decode_r, A
+bra SetAP1
+bra Set_Password
+
+AlarmSet:
+call LCD_Clear
+movlw 40
+call LCD_delay_ms
+call SecurityON
+goto $
+
+
+double_delay:
+movlw 0xFF
+call LCD_delay_ms
+decfsz counter2, A
+bra double_delay
+return
+    
     
 KPD_func:
 	call KPD_READ
@@ -156,16 +253,39 @@ KPD_Check:
     movlw 0x00
     cpfseq depressed, A
     return
-    movf INDF2, W, A
-    movff INDF2, POSTINC0, A
     call LCD_Write_Message
     movlw 0x01 
     movwf depressed, A
-    incf Password_Counter
+    incf Password_Counter, A
     movlw 0x2A
     return
 
-    
+ Pass_Check:
+    movf pass_1_counter, W, A
+    cpfseq pass_0_counter, A
+    bra wrong_password
+Length_Check:    
+    movlw 0x00
+    cpfseq pass_0_counter, A
+    bra Pass_congruency
+    bra Success_message
+Pass_congruency:    
+    lfsr 0, 0x0A0
+    lfsr 1, 0x0B0
+    movf POSTINC0, W, A
+    cpfseq POSTINC1, A
+    bra wrong_password
+    decf pass_0_counter, A 
+    bra Length_Check
+ wrong_password:
+    call LCD_Clear
+    movlw 40
+    call LCD_delay_ms
+    call WP
+    movlw 0x05
+    movwf counter2, A
+    call double_delay
+    bra Enter_Password
 	; ******* Main programme ****************************************
 
 ;loop_1: 	tblrd*+			; one byte from PM to TABLAT, increment TBLPRT

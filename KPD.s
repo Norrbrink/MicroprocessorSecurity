@@ -1,6 +1,6 @@
 #include <xc.inc>
     
-global  KPD_READ, write_var, depressed, pass_set, Decode_r
+global  KPD_READ, write_var, depressed, pass_set, Decode_r, previous_pressed
 
 
 psect	udata_acs   ; reserve data space in access ram
@@ -14,7 +14,7 @@ delay_count_1: ds 1
 write_var: ds 1
 depressed: ds 1
 pass_set: ds 1
-
+previous_pressed: ds 1
     
 psect	data 
 c1:
@@ -82,6 +82,8 @@ KPD_Decode:
     movlw 0x00
     movwf write_var, A 
     movwf depressed, A
+    movlw 0xFF
+    movwf Decode_r, A
     return
 KPD_not0:
     movlw 0x0E

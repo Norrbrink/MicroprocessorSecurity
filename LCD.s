@@ -1,7 +1,8 @@
 #include <xc.inc>
 
 global  LCD_Setup, LCD_Write_Message,LCD_Write_Message2, LCD_Clear, LCD_Shift, LCD_delay_ms, LCD_Write_Hex
-
+extrn	Decode_r
+    
 psect	udata_acs   ; named variables in access ram
 LCD_cnt_l:	ds 1   ; reserve 1 byte for variable LCD_cnt_l
 LCD_cnt_h:	ds 1   ; reserve 1 byte for variable LCD_cnt_h
@@ -53,7 +54,7 @@ LCD_Write_Message:	    ; Message stored at FSR2, length stored in W
 	movlw 0x01
 	movwf   LCD_counter, A
 LCD_Loop_message:
-	movf    POSTINC2, W, A
+	movf    Decode_r, W, A
 	call    LCD_Send_Byte_D
 	decfsz  LCD_counter, A
 	bra	LCD_Loop_message
