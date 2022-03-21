@@ -1,13 +1,14 @@
 #include <xc.inc>
 
 extrn	UART_Setup, UART_Transmit_Message, UART_Transmit_Byte  ; external subroutines
-extrn	LCD_Setup, LCD_Write_Message, LCD_Clear, LCD_Shift, LCD_delay_ms,  LCD_Write_Hex
+extrn	LCD_Setup, LCD_Write_Message, LCD_Write_Message2, LCD_Clear, LCD_Shift, LCD_delay_ms,  LCD_Write_Hex
 extrn	KPD_READ, write_var, depressed, pass_set, Decode_r, previous_pressed
 extrn	ADC_Setup, ADC_Read		   ; external ADC subroutines
 extrn	Multiply_16bit, Multiply_824bit 
 extrn	PIR_Setup    
 extrn	EEPROM_Write, EEPROM_Read, DATA_EE_ADDRH, DATA_EE_ADDR, DATA_EE_DATA, Password_Counter, Password_Setup
 extrn	SP, EP, AO, SO, S, Welcome, WM, SecurityON, WP
+extrn	DAC_Setup, DAC_Int_Hi
     
 psect	udata_acs   ; reserve data space in access ram
 counter:    ds 1    ; reserve one byte for a counter variable
@@ -16,6 +17,7 @@ UART_counter: ds    1
 counter2: ds 1
 pass_0_counter: ds 1
 pass_1_counter: ds 1
+PIR_active: ds 1
     
 psect	udata_bank4 ; reserve data anywhere in RAM (here at 0x400)
 myArray:    ds 0x80 ; reserve 128 bytes for message data
@@ -33,6 +35,9 @@ rst: 	org 0x0
 	;banksel 0
  	goto	setup
 
+int_hi:	org	0x0008	; high vector, no low vector
+	goto	DAC_Int_Hi
+	
 	; ******* Programme FLASH read Setup Code ***********************
 setup:	bcf	CFGS	; point to Flash program memory  
 	bsf	EEPGD 	; access Flash program memory
@@ -45,7 +50,8 @@ setup:	bcf	CFGS	; point to Flash program memory
 	goto	start
 	
 	; ******* Main programme ****************************************
-start:	lfsr	0, myArray	; Load FSR0 with address in RAM	
+start:
+	lfsr	0, myArray	; Load FSR0 with address in RAM	
 	movlw	low highword(myTable)	; address of data in PM
 	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
 	movlw	high(myTable)	; address of data in PM
@@ -99,7 +105,7 @@ start:	lfsr	0, myArray	; Load FSR0 with address in RAM
 	;bra Enter_Password
 	bra Set_Password
 
-Set_Password:
+Set_Password: ; Functions to set and save a Password, initialises the routine
     call LCD_Clear
     movlw 40
     call LCD_delay_ms
@@ -110,7 +116,7 @@ Set_Password:
     movwf pass_1_counter, A
     movlw 0xFF
     movwf previous_pressed, A
-Pass_set:    
+Pass_set:  ;Reads and Decodes the Keypad Inputs  
     call KPD_READ
     movlw 40
     call LCD_delay_ms
@@ -118,7 +124,7 @@ Pass_set:
     cpfseq Decode_r, A
     bra Pass_Write
     bra Pass_set
-Pass_Write:
+Pass_Write: ;Saves the password to memory
     movlw 0x00
     cpfseq write_var, A
     call KPD_Check
@@ -136,7 +142,7 @@ Pass_Write:
     ;bra Success_message
 
 
-Enter_Password:
+Enter_Password: ; Functions to Enter password and compare it to the saved password
     call LCD_Clear
     movlw 40
     call LCD_delay_ms
@@ -148,7 +154,7 @@ Enter_Password:
     ;movlw 0xFF
     ;movwf previous_pressed, A
     ;movwf Decode_r
-Pass_set2:    
+Pass_set2:    ;Reads and Decodes the Keypad Inputs
     call KPD_READ
     movlw 40
     call LCD_delay_ms
@@ -156,7 +162,7 @@ Pass_set2:
     cpfseq Decode_r, A
     bra Pass_Write2
     bra Pass_set2
-Pass_Write2:
+Pass_Write2: ;Saves the password in Data memory to be compared with the Correct Password
     movlw 0x00
     cpfseq write_var, A
     call KPD_Check
@@ -176,6 +182,7 @@ Pass_Write2:
 
     
 Success_message: ;Welcome Message and prompt to further actions
+bcf GIE
 call LCD_Clear
 movlw 40
 call LCD_delay_ms
@@ -225,6 +232,7 @@ call LCD_Clear
 movlw 40
 call LCD_delay_ms
 call SecurityON
+call SecuritySystem_Setup
 goto $
 
 
@@ -236,7 +244,7 @@ bra double_delay
 return
     
     
-KPD_func:
+KPD_func: ;Function to Read and Decode the inputs of the keypad
 	call KPD_READ
 	movlw 0xF0
 	movlw 40
@@ -260,7 +268,9 @@ KPD_Check:
     movlw 0x2A
     return
 
- Pass_Check:
+Pass_Check:
+    lfsr 0, 0x0A0
+    lfsr 1, 0x0B0
     movf pass_1_counter, W, A
     cpfseq pass_0_counter, A
     bra wrong_password
@@ -270,8 +280,6 @@ Length_Check:
     bra Pass_congruency
     bra Success_message
 Pass_congruency:    
-    lfsr 0, 0x0A0
-    lfsr 1, 0x0B0
     movf POSTINC0, W, A
     cpfseq POSTINC1, A
     bra wrong_password
@@ -302,26 +310,52 @@ Pass_congruency:
 ;	lfsr	2, myArray
 ;	call	LCD_Write_Message
 ;	
-;measure_loop:
-;	call	ADC_Read
-;	movf	ADRESH, W, A
-;	call	LCD_Write_Hex
-;	movf	ADRESL, W, A
-;	call	LCD_Write_Hex
-;	call	LCD_Clear
-;	movlw 40
-;	call LCD_delay_ms
-;	call Multiply_16bit
-;	call LCD_Shift
-;	call Multiply_824bit
-;	call Multiply_824bit
-;	call Multiply_824bit
-;	movlw 0x56
-;	movwf POSTINC0, A ; Adding units to Voltage
-;	lfsr	2, 0x0A0
-;	movlw 0x06
-;	call	LCD_Write_Message
-;	goto $
-	;goto	measure_loop		; goto current line in code
-	
+measure_loop:
+	call	ADC_Read
+	movf	ADRESH, W, A
+	call	LCD_Write_Hex
+	movf	ADRESL, W, A
+	call	LCD_Write_Hex
+	call	LCD_Clear
+	movlw 40
+	call LCD_delay_ms
+	call Multiply_16bit
+	call LCD_Shift
+	call Multiply_824bit
+	call Multiply_824bit
+	call Multiply_824bit
+	movlw 0x56
+	movwf POSTINC0, A ; Adding units to Voltage
+	lfsr	2, 0x0D0
+	movlw 0x06
+	call	LCD_Write_Message2
+	movlw 40
+	call LCD_delay_ms
+	return
+
+SecuritySystem_Setup:
+    movlw 0x04
+    movwf TRISH, A
+    movlw 0x04
+    movwf PORTH, A
+SecuritySystem:
+    movlw 00100100B
+    cpfseq PORTH, A
+    call Alarm
+    ;call measure_loop
+    lfsr 0, 0x0D0
+    movlw 0x30
+    ;cpfseq INDF0, A 
+    ;call Alarm
+    call measure_loop
+    lfsr 0, 0x0D0
+    movlw 0x30
+    ;cpfseq INDF0, A 
+    ;call Alarm
+    bra SecuritySystem
+Alarm:
+    call DAC_Setup
+    call Enter_Password
+    
+    
 end rst

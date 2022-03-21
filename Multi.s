@@ -53,7 +53,7 @@ ADDWFC  RES3, F, A        ;
 ;call	LCD_Write_Hex    
 ;movf	RES0, W, A
 ;call	LCD_Write_Hex
-lfsr 0, 0x0A0
+lfsr 0, 0x0D0
 movf RES3, W, A    
 addlw 0x30
 movwf POSTINC0, A
