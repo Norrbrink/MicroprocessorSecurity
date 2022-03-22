@@ -18,6 +18,10 @@ counter2: ds 1
 pass_0_counter: ds 1
 pass_1_counter: ds 1
 PIR_active: ds 1
+unlocked: ds 1
+unlock_timer: ds 1
+unlock_timer1: ds 1
+unlock_timer2: ds 1
     
 psect	udata_bank4 ; reserve data anywhere in RAM (here at 0x400)
 myArray:    ds 0x80 ; reserve 128 bytes for message data
@@ -47,11 +51,12 @@ setup:	bcf	CFGS	; point to Flash program memory
 	call	PIR_Setup
 	movlw	0x00
 	movwf	TRISF, A
+	
 	goto	start
 	
 	; ******* Main programme ****************************************
 start:
-	lfsr	0, myArray	; Load FSR0 with address in RAM	
+	lfsr	0, myArray	; Load FSR0 with address in RAM		
 	movlw	low highword(myTable)	; address of data in PM
 	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
 	movlw	high(myTable)	; address of data in PM
@@ -158,6 +163,12 @@ Pass_set2:    ;Reads and Decodes the Keypad Inputs
     call KPD_READ
     movlw 40
     call LCD_delay_ms
+    decf unlock_timer
+    movlw 0xFF
+    movwf unlock_timer2, A
+    movlw 0x00
+    cpfseq unlocked, A
+    call unlock_delay 
     movf previous_pressed, W, A
     cpfseq Decode_r, A
     bra Pass_Write2
@@ -177,9 +188,21 @@ Pass_Write2: ;Saves the password in Data memory to be compared with the Correct 
     cpfseq Decode_r, A
     bra Pass_set2
     bra Pass_Check
-    
-    
-
+unlock_delay:
+    decf unlock_timer2
+    movlw 0x00
+    cpfseq unlock_timer2, A
+    bra unlock_delay
+    cpfseq unlock_timer, A
+    return
+unlock_delay2:
+    decf unlock_timer1, A
+    movlw 0xFF 
+    movwf unlock_timer,A
+    movlw 0x00
+    cpfseq unlock_timer1, A
+    return
+    call Alarm
     
 Success_message: ;Welcome Message and prompt to further actions
 bcf GIE
@@ -334,28 +357,60 @@ measure_loop:
 	return
 
 SecuritySystem_Setup:
+    movlw 0xFB
+    movwf TRISD, A
+    movlw 40
+    call LCD_delay_ms
     movlw 0x04
-    movwf TRISH, A
-    movlw 0x04
-    movwf PORTH, A
+    movwf PORTD, A
+    movlw 40
+    call LCD_delay_ms
 SecuritySystem:
-    movlw 00100100B
-    cpfseq PORTH, A
-    call Alarm
+;    movlw 00100100B 
+;    cpfseq PORTD ;Check Key Switch
+;    call keyAlarm
+;    call measure_loop 
+;    lfsr 0, 0x0D0
+;    movlw 0x30
+;    cpfseq INDF0, A ;Check PIR
+;    call Alarm
     ;call measure_loop
-    lfsr 0, 0x0D0
-    movlw 0x30
-    ;cpfseq INDF0, A 
+    ;lfsr 0, 0x0D0
+    ;movlw 0x30
+    ;cpfseq INDF0, A  ;Check Speaker
     ;call Alarm
-    call measure_loop
-    lfsr 0, 0x0D0
-    movlw 0x30
-    ;cpfseq INDF0, A 
-    ;call Alarm
+;    call Ultrasonic
+;    lfsr 0, 0x0D0
+;    movlw 0x34
+;    cpfseq INDF0, A  ;Check Ultrasonic
+;    call Alarm
+    movlw 10100100B 
+    cpfseq PORTD ;Check Window/Door Switch
+    call Alarm
     bra SecuritySystem
 Alarm:
     call DAC_Setup
     call Enter_Password
+keyAlarm:
+    movlw 0x01
+    movwf unlocked, A
+    movlw 0xFF
+    movwf unlock_timer, A
+    movlw 0x03
+    movwf unlock_timer1, A
+    call Enter_Password
     
+    
+Ultrasonic:
+    movlw 0x00
+    movwf TRISA, A
+    movlw 10
+    call LCD_delay_ms
+    movlw 0x01
+    movwf TRISA
+    movlw 10
+    call LCD_delay_ms
+    call measure_loop
+    return
     
 end rst
