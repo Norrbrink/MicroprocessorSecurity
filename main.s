@@ -7,7 +7,7 @@ extrn	ADC_Setup, ADC_Read		   ; external ADC subroutines
 extrn	Multiply_16bit, Multiply_824bit 
 extrn	PIR_Setup    
 extrn	EEPROM_Write, EEPROM_Read, DATA_EE_ADDRH, DATA_EE_ADDR, DATA_EE_DATA, Password_Counter, Password_Setup
-extrn	SP, EP, AO, SO, S, Welcome, WM, SecurityON, WP
+extrn	SP, EP, AO, SO, S, Welcome, WM, SecurityON, WP, AA
 extrn	DAC_Setup, DAC_Int_Hi
     
 psect	udata_acs   ; reserve data space in access ram
@@ -319,19 +319,7 @@ Pass_congruency:
     bra Enter_Password
 	; ******* Main programme ****************************************
 
-;loop_1: 	tblrd*+			; one byte from PM to TABLAT, increment TBLPRT
-;	movff	TABLAT, POSTINC0; move data from TABLAT to (FSR0), inc FSR0	
-;	decfsz	counter, A		; count down to zero
-;	bra	loop_1		; keep going until finished
-;		
-;	movlw	myTable_l	; output message to UART
-;	lfsr	2, myArray
-;	call	UART_Transmit_Message
-;
-;	movlw	myTable_l	; output message to LCD
-;				; don't send the final carriage return to LCD
-;	lfsr	2, myArray
-;	call	LCD_Write_Message
+;loop_1: 	
 ;	
 measure_loop:
 	call	ADC_Read
@@ -383,14 +371,16 @@ SecuritySystem:
 ;    lfsr 0, 0x0D0
 ;    movlw 0x34
 ;    cpfseq INDF0, A  ;Check Ultrasonic
-;    call Alarm
+    ;call Alarm
     movlw 10100100B 
     cpfseq PORTD ;Check Window/Door Switch
     call Alarm
     bra SecuritySystem
 Alarm:
     call DAC_Setup
+    call AA
     call Enter_Password
+ 
 keyAlarm:
     movlw 0x01
     movwf unlocked, A
@@ -413,4 +403,5 @@ Ultrasonic:
     call measure_loop
     return
     
+
 end rst
