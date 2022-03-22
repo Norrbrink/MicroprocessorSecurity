@@ -1,6 +1,6 @@
 #include <xc.inc>
     
-global  KPD_READ, write_var
+global  KPD_READ, write_var, depressed, pass_set, Decode_r, previous_pressed
 
 
 psect	udata_acs   ; reserve data space in access ram
@@ -12,6 +12,9 @@ Decode_c: ds	1
 Decode_r: ds	1
 delay_count_1: ds 1
 write_var: ds 1
+depressed: ds 1
+pass_set: ds 1
+previous_pressed: ds 1
     
 psect	data 
 c1:
@@ -58,10 +61,15 @@ KPD_READ:
     call KPD_READ_47
     call KPD_Decode
     lfsr 2, Decode_r
-;    movf KPD_vert, W
+    movlw 0x2A
+    cpfseq Decode_r, A
+    return
+    movlw 0x01
+    movwf pass_set, A
+    ;movf KPD_vert, W
 ;    iorwf KPD_hor, W, A
 ;    movwf PORTF, A
-    return
+    
 KPD_Decode:
     movf KPD_vert, W, A
     iorwf KPD_hor, W, A
@@ -73,6 +81,9 @@ KPD_Decode:
     bra KPD_not0
     movlw 0x00
     movwf write_var, A 
+    movwf depressed, A
+    movlw 0xFF
+    movwf Decode_r, A
     return
 KPD_not0:
     movlw 0x0E

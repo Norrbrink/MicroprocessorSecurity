@@ -1,13 +1,18 @@
 #include <xc.inc>
-global EEPROM_Write, EEPROM_Read, DATA_EE_ADDRH, DATA_EE_ADDR, DATA_EE_DATA
+global EEPROM_Write, EEPROM_Read, DATA_EE_ADDRH, DATA_EE_ADDR, DATA_EE_DATA, Password_Counter, Password_Setup
     
 psect udata_acs
 DATA_EE_ADDRH: ds 1
 DATA_EE_ADDR: ds 1
 DATA_EE_DATA: ds 1
+Password_Counter: ds 1
     
 psect	eeprom_code,class=CODE
-    
+Password_Setup:
+    movlw 0x00
+    movwf Password_Counter
+    ;lfsr 0, 0x0C0
+    return
 EEPROM_Write:
     MOVF   DATA_EE_ADDRH, W, A      ;
     MOVWF   EEADRH, A             ; Upper bits of Data Memory Address to write
