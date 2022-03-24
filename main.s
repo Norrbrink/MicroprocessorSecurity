@@ -3,11 +3,11 @@
 extrn	UART_Setup, UART_Transmit_Message, UART_Transmit_Byte  ; external subroutines
 extrn	LCD_Setup, LCD_Write_Message, LCD_Write_Message2, LCD_Clear, LCD_Shift, LCD_delay_ms,  LCD_Write_Hex
 extrn	KPD_READ, write_var, depressed, pass_set, Decode_r, previous_pressed
-extrn	ADC_Setup, ADC_Read		   ; external ADC subroutines
+extrn	ADC_Setup, ADC_Setup1, ADC_Setup2, ADC_Read		   ; external ADC subroutines
 extrn	Multiply_16bit, Multiply_824bit 
 extrn	PIR_Setup    
-extrn	EEPROM_Write, EEPROM_Read, DATA_EE_ADDRH, DATA_EE_ADDR, DATA_EE_DATA, Password_Counter, Password_Setup
-extrn	SP, EP, AO, SO, S, Welcome, WM, SecurityON, WP
+extrn	EEPROM_Write, EEPROM_Read, DATA_EE_ADDRH, DATA_EE_ADDR, DATA_EE_DATA, Password_Counter, Password_Counter2, Password_Setup, EEPROM_Refresh
+extrn	SP, EP, AO, SO, S, Welcome, WM, SecurityON, WP, AA
 extrn	DAC_Setup, DAC_Int_Hi
     
 psect	udata_acs   ; reserve data space in access ram
@@ -22,6 +22,7 @@ unlocked: ds 1
 unlock_timer: ds 1
 unlock_timer1: ds 1
 unlock_timer2: ds 1
+password_fails: ds 1
     
 psect	udata_bank4 ; reserve data anywhere in RAM (here at 0x400)
 myArray:    ds 0x80 ; reserve 128 bytes for message data
@@ -91,26 +92,34 @@ start:
 ;	movlw 0x00
 ;	cpfseq PORTD
 ;	call	LCD_Clear
-;PASSWORD:
+;EEPROM_Password_Setup:
 ;    movlw 0x00
+;    movwf Password_Counter2
 ;    movwf DATA_EE_ADDRH, A
 ;    movwf DATA_EE_ADDR, A
-;    movlw 0x01
+;Write_to_EEPROM:
+;    ;Password input
+;    movlw Decode_r ;Move Password Literal
 ;    movwf DATA_EE_DATA, A
 ;    call EEPROM_Write
+;    incf DATA_EE_ADDR ;Increments adress
+;    movlw 0x2A
+;    cpfseq Decode_r
+;    bra Write_to_EEPROM
+;    bra Enter_Password ;Go to enter password to check if it is correct
 	
-	call LCD_Clear
-	movlw 40
-	call LCD_delay_ms
-	call Password_Setup
-	call EEPROM_Read
-	movwf 0x070, A
-	movlw 0xFF
-	;cpfseq 0x070, A
-	;bra Enter_Password
-	bra Set_Password
+call LCD_Clear
+movlw 40
+call LCD_delay_ms
+call Password_Setup
+call EEPROM_Read
+movwf 0x070, A
+movlw 0xFF
+;cpfseq 0x070, A
+;bra Enter_Password
+bra Set_Password
 
-Set_Password: ; Functions to set and save a Password, initialises the routine
+Set_Password: 	;Functions to set and save a Password, initialises the routine
     call LCD_Clear
     movlw 40
     call LCD_delay_ms
@@ -121,7 +130,7 @@ Set_Password: ; Functions to set and save a Password, initialises the routine
     movwf pass_1_counter, A
     movlw 0xFF
     movwf previous_pressed, A
-Pass_set:  ;Reads and Decodes the Keypad Inputs  
+Pass_set:  	;Reads and Decodes the Keypad Inputs  
     call KPD_READ
     movlw 40
     call LCD_delay_ms
@@ -129,7 +138,7 @@ Pass_set:  ;Reads and Decodes the Keypad Inputs
     cpfseq Decode_r, A
     bra Pass_Write
     bra Pass_set
-Pass_Write: ;Saves the password to memory
+Pass_Write: 	;Saves the password to memory
     movlw 0x00
     cpfseq write_var, A
     call KPD_Check
@@ -143,11 +152,11 @@ Pass_Write: ;Saves the password to memory
     movlw 0x2A
     cpfseq Decode_r, A
     bra Pass_set
+    ;bra EEPROM_Password_Setup
     bra Enter_Password
-    ;bra Success_message
+ 
 
-
-Enter_Password: ; Functions to Enter password and compare it to the saved password
+Enter_Password: 	;Functions to Enter password and compare it to the saved password
     call LCD_Clear
     movlw 40
     call LCD_delay_ms
@@ -163,7 +172,7 @@ Pass_set2:    ;Reads and Decodes the Keypad Inputs
     call KPD_READ
     movlw 40
     call LCD_delay_ms
-    decf unlock_timer
+    decf unlock_timer, A
     movlw 0xFF
     movwf unlock_timer2, A
     movlw 0x00
@@ -173,7 +182,7 @@ Pass_set2:    ;Reads and Decodes the Keypad Inputs
     cpfseq Decode_r, A
     bra Pass_Write2
     bra Pass_set2
-Pass_Write2: ;Saves the password in Data memory to be compared with the Correct Password
+Pass_Write2: 	;Saves the password in Data memory to be compared with the Correct Password
     movlw 0x00
     cpfseq write_var, A
     call KPD_Check
@@ -188,8 +197,8 @@ Pass_Write2: ;Saves the password in Data memory to be compared with the Correct 
     cpfseq Decode_r, A
     bra Pass_set2
     bra Pass_Check
-unlock_delay:
-    decf unlock_timer2
+unlock_delay: 	;Function that delays alarm going off for thirty seconds such that Password can be inputted
+    decf unlock_timer2, A
     movlw 0x00
     cpfseq unlock_timer2, A
     bra unlock_delay
@@ -202,14 +211,16 @@ unlock_delay2:
     movlw 0x00
     cpfseq unlock_timer1, A
     return
-    call Alarm
+    bra Alarm
     
-Success_message: ;Welcome Message and prompt to further actions
+Success_message: 	;Welcome Message and prompt to further actions
 bcf GIE
 call LCD_Clear
 movlw 40
 call LCD_delay_ms
 call Welcome
+movlw 0x00
+movwf password_fails, A
 movlw 0x05
 movwf counter2, A
 call double_delay
@@ -217,6 +228,8 @@ call SetAP_Prompt
 call KPD_READ
 goto $
 ;cpfseq 0
+
+
 SetAP_Prompt: ;Set Alarm or New Password Prompt
 call LCD_Clear
 movlw 40
@@ -225,11 +238,8 @@ call AO ;Set alarm
 call LCD_Shift ;Shifts onto new line
 call SO ;Set new password
 bra SetAP1
-goto $
 
-
-
-SetAP1: ;Checks for Alarm Input
+SetAP1: 	;Checks for 'Set Alarm' Input
 call KPD_READ
 movlw 40
 call LCD_delay_ms
@@ -244,22 +254,55 @@ cpfseq Decode_r, A
 bra SetAP2
 bra AlarmSet
 
-SetAP2:
+SetAP2: 	;Checks for 'Set Password' Input
 movlw 0x2A
 cpfseq Decode_r, A
 bra SetAP1
 bra Set_Password
 
-AlarmSet:
+AlarmSet: 	;Sets System to detect intruders and calls the activation of the alarm
 call LCD_Clear
 movlw 40
 call LCD_delay_ms
 call SecurityON
-call SecuritySystem_Setup
-goto $
-
-
-double_delay:
+SecuritySystem_Setup:
+    movlw 0xFB
+    movwf TRISD, A
+    movlw 40
+    call LCD_delay_ms
+    movlw 0x04
+    movwf PORTD, A
+    movlw 40
+    call LCD_delay_ms
+SecuritySystem:
+    btfss PORTD, 7, A ;Check Key Switch
+    bra keyAlarm
+    movlw 0x00
+    btfsc PORTD, 7, A ;Check Key Switch
+    movwf unlocked, A
+;    call ADC_Setup1
+;    call measure_loop
+;    lfsr 0, 0x0D0
+;    movlw 0x30
+;    cpfseq INDF0, A  ;Check Speaker
+;    bra Alarm
+    call ADC_Setup2
+    call Ultrasonic
+    lfsr 0, 0x0D0
+    movlw 0x34
+    cpfseq INDF0, A  ;Check Ultrasonic
+    bra Alarm
+    btfss PORTD, 5, A ;Check Window/Door Switch
+    bra Alarm
+     call ADC_Setup
+    call measure_loop 
+    lfsr 0, 0x0D0
+    movlw 0x34
+    cpfseq INDF0, A ;Check PIR
+    bra SecuritySystem
+    bra Alarm
+    
+double_delay: 	;Nested Delay Function
 movlw 0xFF
 call LCD_delay_ms
 decfsz counter2, A
@@ -267,7 +310,7 @@ bra double_delay
 return
     
     
-KPD_func: ;Function to Read and Decode the inputs of the keypad
+KPD_func: 	;Function to Read and Decode the inputs of the keypad
 	call KPD_READ
 	movlw 0xF0
 	movlw 40
@@ -279,10 +322,9 @@ KPD_func: ;Function to Read and Decode the inputs of the keypad
 	cpfseq write_var, A
 	call KPD_Check
 	bra KPD_func
-	goto	$		; goto current line in cod
 KPD_Check:
     movlw 0x00
-    cpfseq depressed, A
+    cpfseq depressed, A		;Check if key has been unpressed
     return
     call LCD_Write_Message
     movlw 0x01 
@@ -291,59 +333,97 @@ KPD_Check:
     movlw 0x2A
     return
 
-Pass_Check:
+Pass_Check:	;Function to check inputted Password against stored Password
     lfsr 0, 0x0A0
     lfsr 1, 0x0B0
-    movf pass_1_counter, W, A
-    cpfseq pass_0_counter, A
-    bra wrong_password
+;    movf pass_1_counter, W, A
+;    cpfseq pass_0_counter, A	;Compares length of passwords
+;    bra wrong_password
 Length_Check:    
     movlw 0x00
-    cpfseq pass_0_counter, A
+    cpfseq pass_0_counter, A ;Run until all symbols have been checked
     bra Pass_congruency
     bra Success_message
 Pass_congruency:    
     movf POSTINC0, W, A
-    cpfseq POSTINC1, A
+    cpfseq POSTINC1, A	;Compares individual symbols of the passwords
     bra wrong_password
     decf pass_0_counter, A 
     bra Length_Check
- wrong_password:
+ 
+ wrong_password:	;Outputs message to let them know password has been inputted incorrectly
     call LCD_Clear
     movlw 40
     call LCD_delay_ms
     call WP
+    incf password_fails, A
+    movlw 0x05
+    cpfslt password_fails, A ;Allow for 4 failures before sounding the Alarm and notifying the owner
+    bra Alarm
     movlw 0x05
     movwf counter2, A
     call double_delay
     bra Enter_Password
-	; ******* Main programme ****************************************
 
-;loop_1: 	tblrd*+			; one byte from PM to TABLAT, increment TBLPRT
-;	movff	TABLAT, POSTINC0; move data from TABLAT to (FSR0), inc FSR0	
-;	decfsz	counter, A		; count down to zero
-;	bra	loop_1		; keep going until finished
-;		
-;	movlw	myTable_l	; output message to UART
-;	lfsr	2, myArray
-;	call	UART_Transmit_Message
-;
-;	movlw	myTable_l	; output message to LCD
-;				; don't send the final carriage return to LCD
-;	lfsr	2, myArray
-;	call	LCD_Write_Message
-;	
-measure_loop:
+EEPROM_Password_Setup:
+    movff pass_1_counter, Password_Counter2, A
+    movlw 0x00
+    movwf DATA_EE_ADDRH, A
+    movwf DATA_EE_ADDR, A
+    lfsr 1, 0x0B0
+Write_to_EEPROM:
+;    clrf EECON1, A
+;    clrf EEDATA, A
+    movff POSTINC1, DATA_EE_DATA, A
+    call EEPROM_Write
+    call EEPROM_Refresh
+    incf DATA_EE_ADDR	;Increments adress
+    decf Password_Counter2, A
+    movlw 0x00
+    cpfseq Password_Counter2, A
+    bra Write_to_EEPROM
+    movff pass_1_counter, Password_Counter2, A
+    lfsr 0, 0x0B0
+clear_password:
+    movlw 0x00
+    movwf POSTINC0, A
+    decf Password_Counter2, A
+    cpfseq Password_Counter2, A
+    bra clear_password
+    bra Enter_Password ;Go to enter password check for correct password before setting alarm or new password
+
+Pass_Check_EEPROM: ;Function to check inputted Password against stored EEPROM Password
+movlw 0x00
+movwf DATA_EE_ADDRH, A
+movwf DATA_EE_ADDR, A
+lfsr 0, 0x0A0
+;movf pass_1_counter, W, A
+;cpfseq pass_0_counter, A ;Compares length of passwords
+;bra wrong_password
+Length_Check_EEPROM:
+movlw 0x00
+cpfseq pass_0_counter, A ;Run until all symbols have been checked
+bra Pass_congruency_EEPROM
+bra Success_message
+Pass_congruency_EEPROM:
+call EEPROM_Read
+cpfseq POSTINC0, A ;Compares individual symbols of the passwords
+bra wrong_password
+incf DATA_EE_ADDR, A
+decf pass_0_counter, A
+bra Length_Check_EEPROM    
+
+measure_loop: 	;Function that measures the voltage on the pin to determine the value at a given pin
 	call	ADC_Read
 	movf	ADRESH, W, A
-	call	LCD_Write_Hex
+	;call	LCD_Write_Hex
 	movf	ADRESL, W, A
-	call	LCD_Write_Hex
-	call	LCD_Clear
+	;call	LCD_Write_Hex
+	;call	LCD_Clear
 	movlw 40
 	call LCD_delay_ms
 	call Multiply_16bit
-	call LCD_Shift
+	;call LCD_Shift
 	call Multiply_824bit
 	call Multiply_824bit
 	call Multiply_824bit
@@ -351,66 +431,40 @@ measure_loop:
 	movwf POSTINC0, A ; Adding units to Voltage
 	lfsr	2, 0x0D0
 	movlw 0x06
-	call	LCD_Write_Message2
+	;call	LCD_Write_Message2
 	movlw 40
 	call LCD_delay_ms
 	return
 
-SecuritySystem_Setup:
-    movlw 0xFB
-    movwf TRISD, A
-    movlw 40
-    call LCD_delay_ms
-    movlw 0x04
-    movwf PORTD, A
-    movlw 40
-    call LCD_delay_ms
-SecuritySystem:
-;    movlw 00100100B 
-;    cpfseq PORTD ;Check Key Switch
-;    call keyAlarm
-;    call measure_loop 
-;    lfsr 0, 0x0D0
-;    movlw 0x30
-;    cpfseq INDF0, A ;Check PIR
-;    call Alarm
-    ;call measure_loop
-    ;lfsr 0, 0x0D0
-    ;movlw 0x30
-    ;cpfseq INDF0, A  ;Check Speaker
-    ;call Alarm
-;    call Ultrasonic
-;    lfsr 0, 0x0D0
-;    movlw 0x34
-;    cpfseq INDF0, A  ;Check Ultrasonic
-;    call Alarm
-    movlw 10100100B 
-    cpfseq PORTD ;Check Window/Door Switch
-    call Alarm
-    bra SecuritySystem
-Alarm:
+
+Alarm: 	;Actives a Siren and Notifies Owner of Intrusion
     call DAC_Setup
-    call Enter_Password
-keyAlarm:
+    call AA
+    movlw 0x00
+    movwf password_fails, A
+    bra Enter_Password
+ 
+keyAlarm: 	;Activates 30-second timer, if password isn't inputed, Alarm is Activated
     movlw 0x01
     movwf unlocked, A
     movlw 0xFF
     movwf unlock_timer, A
     movlw 0x03
     movwf unlock_timer1, A
-    call Enter_Password
+    bra Enter_Password
     
     
-Ultrasonic:
+Ultrasonic: 	;Generates and reads Ultrasonic Waves to determine distance from source
     movlw 0x00
     movwf TRISA, A
     movlw 10
     call LCD_delay_ms
-    movlw 0x01
-    movwf TRISA
+    movlw 0x04
+    movwf TRISA, A
     movlw 10
     call LCD_delay_ms
     call measure_loop
     return
     
+
 end rst

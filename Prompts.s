@@ -1,8 +1,8 @@
 #include <xc.inc>
 
-global SP, EP, AO, SO, S, Welcome, WM, SecurityON, WP
+global SP, EP, AO, SO, S, Welcome, WM, SecurityON, WP, AA
     
-extrn LCD_Write_Message2 
+extrn LCD_Write_Message2, UART_Transmit_Message 
 
 psect	udata_acs   ; reserve data space in access ram
 prompt_counter:    ds 1    ; reserve one byte for a counter variable
@@ -72,7 +72,12 @@ db 'W','R','O','N','G',' ','P','A','S','S','W','O','R','D',0x0a
 ; message, plus carriage return
 myTable_10 EQU 15 ; length of data
 align 2
-	
+
+UART_mess:
+db 'A','L','A','R','M',' ','A','C','T','I','V','A','T', 'E', 'D',0x0a
+; message, plus carriage return
+myTable_11 EQU 16 ; length of data
+align 2
 	
 psect prompt_code, class=CODE	
 SP:	
@@ -171,7 +176,21 @@ WP:
 	movwf	prompt_counter_1, A
 	bra	loop_1
 	
-
+AA:	
+	lfsr	0, myArray2	; Load FSR0 with address in RAM	
+	movlw	low highword(UART_mess)	; address of data in PM
+	movwf	TBLPTRU, A		; load upper bits to TBLPTRU
+	movlw	high(UART_mess)	; address of data in PM
+	movwf	TBLPTRH, A		; load high byte to TBLPTRH
+	movlw	low(UART_mess)	; address of data in PM
+	movwf	TBLPTRL, A		; load low byte to TBLPTRL
+	movlw	myTable_11	; bytes to read
+	addlw	0xFF
+	movwf 	prompt_counter, A		; our counter register
+	movwf	prompt_counter_1, A
+	bra	UART_Alarm
+	
+	
 loop_1: 	tblrd*+			; one byte from PM to TABLAT, increment TBLPRT
 	movff	TABLAT, POSTINC0; move data from TABLAT to (FSR0), inc FSR0	
 	decfsz	prompt_counter, A		; count down to zero
@@ -182,6 +201,16 @@ loop_1: 	tblrd*+			; one byte from PM to TABLAT, increment TBLPRT
 	lfsr	2, myArray2
 	call	LCD_Write_Message2
 	return
+
+UART_Alarm:
+    tblrd*+			; one byte from PM to TABLAT, increment TBLPRT
+    movff	TABLAT, POSTINC0; move data from TABLAT to (FSR0), inc FSR0	
+    decfsz	prompt_counter, A		; count down to zero
+    bra		UART_Alarm		; keep going until finished
+    
+    movf	prompt_counter_1, W, A	; output message to UART
+    lfsr	2, myArray2
+    call	UART_Transmit_Message
 
 Welcome:
     call WM
