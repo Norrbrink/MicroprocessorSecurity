@@ -5,7 +5,7 @@ Linker command line:
 -W-3 --edf=C:\Program Files\Microchip\xc8\v2.30\pic\dat\en_msgs.txt -cs \
   -h+dist/default/debug\MicroprocessorsLab.debug.sym \
   --cmf=dist/default/debug\MicroprocessorsLab.debug.cmf -z -Q18F87K22 \
-  -oC:\Users\an1519\AppData\Local\Temp\scsox2 -ver=XC8 PIC(R) Assembler \
+  -oC:\Users\an1519\AppData\Local\Temp\s7ikx2 -ver=XC8 PIC(R) Assembler \
   -Moutput.map -E1 --acfsm=1493 -ACODE=00h-01FFFFh -ACONST=00h-01FFFFh \
   -ASMALLCONST=01000h-010FFhx496 \
   -AMEDIUMCONST=01000h-0FFFFh,011000h-01FFFFh -ACOMRAM=00h-05Fh \
@@ -18,12 +18,12 @@ Linker command line:
   -ABANK13=0D00h-0DFFh -ABANK14=0E00h-0EFFh -ABANK15=0F00h-0F15h \
   -ASFR=0F16h-0F5Fh,0F60h-0FFFh -AIDLOC=0200000h-0200007h \
   -AEEDATA=0F00000h-0F003FFh build/default/debug/config.o \
-  build/default/debug/main.o build/default/debug/ACD.o \
-  build/default/debug/KPD.o build/default/debug/LCD.o \
-  build/default/debug/Multi.o build/default/debug/PIR.o \
-  build/default/debug/Siren.o build/default/debug/UART.o \
-  build/default/debug/EEPROM.o build/default/debug/Prompts.o \
-  build/default/debug/DAC_Interrupt.o 
+  build/default/debug/main.o build/default/debug/KPD.o \
+  build/default/debug/LCD.o build/default/debug/Multi.o \
+  build/default/debug/PIR.o build/default/debug/Siren.o \
+  build/default/debug/UART.o build/default/debug/EEPROM.o \
+  build/default/debug/Prompts.o build/default/debug/DAC_Interrupt.o \
+  build/default/debug/ADC.o 
 
 Object code version is 3.11
 
@@ -35,58 +35,58 @@ Machine type is 18F87K22
 build/default/debug/config.o
                 config                           300000   300000        E        0       4
 build/default/debug/main.o
-                data                              1FA7A    1FA7A        E     FD3D       0
-                code                                  0        0      2AC        0       0
+                data                              1FA1E    1FA1E        E     FD0F       0
+                code                                  0        0      30E        0       0
                 udata_bank4                         400      400       80      400       1
-                udata_acs                             B        B        B        0       1
-build/default/debug/ACD.o
-                adc_code                          1FA9C    1FA9C       1E    1FA9C       0
+                udata_acs                             0        0        C        0       1
 build/default/debug/KPD.o
                 kpd_code                          1FCA6    1FCA6       F8    1FCA6       0
-                data                              1FA88    1FA88       14     FD44       0
-                udata_acs                             0        0        B        0       1
+                data                              1FA2C    1FA2C       14     FD16       0
+                udata_acs                             C        C        B        0       1
 build/default/debug/LCD.o
                 lcd_code                          1FEB8    1FEB8      148    1FEB8       0
-                udata_acs_ovr                        23       23        1        0       1
-                udata_acs                            16       16        5        0       1
+                udata_acs_ovr                        25       25        1        0       1
+                udata_acs                            1C       1C        5        0       1
 build/default/debug/Multi.o
                 multi_code                        1FB88    1FB88       84    1FB88       0
 build/default/debug/PIR.o
-                PIR_code                          1FA70    1FA70        A    1FA70       0
+                PIR_code                          1FA14    1FA14        A    1FA14       0
 build/default/debug/Siren.o
-                Siren_code                        1FABA    1FABA       22    1FABA       0
+                Siren_code                        1FA40    1FA40       22    1FA40       0
 build/default/debug/UART.o
-                uart_code                         1FADC    1FADC       28    1FADC       0
-                udata_acs                            22       22        1        0       1
+                uart_code                         1FA62    1FA62       28    1FA62       0
+                udata_acs                            24       24        1        0       1
 build/default/debug/EEPROM.o
-                eeprom_code                       1FB04    1FB04       3E    1FB04       0
-                udata_acs                            1B       1B        4        0       1
+                eeprom_code                       1FB20    1FB20       68    1FB20       0
+                udata_acs                            17       17        5        0       1
 build/default/debug/Prompts.o
                 prompt_code                       1FD9E    1FD9E      11A    1FD9E       0
                 data                              1FC0C    1FC0C       9A     FE06       0
                 udata_bank5                         500      500       80      500       1
-                udata_acs                            1F       1F        2        0       1
+                udata_acs                            21       21        2        0       1
 build/default/debug/DAC_Interrupt.o
-                dac_code                          1FB42    1FB42       46    1FB42       0
-                udata_acs                            21       21        1        0       1
+                dac_code                          1FA8A    1FA8A       46    1FA8A       0
+                udata_acs                            23       23        1        0       1
+build/default/debug/ADC.o
+                adc_code                          1FAD0    1FAD0       50    1FAD0       0
 
 TOTAL           Name                               Link     Load   Length     Space
         CLASS   CODE           
-                code                                  0        0      2AC         0
-                adc_code                          1FA9C    1FA9C       1E         0
+                code                                  0        0      30E         0
                 kpd_code                          1FCA6    1FCA6       F8         0
                 lcd_code                          1FEB8    1FEB8      148         0
                 multi_code                        1FB88    1FB88       84         0
-                PIR_code                          1FA70    1FA70        A         0
-                Siren_code                        1FABA    1FABA       22         0
-                uart_code                         1FADC    1FADC       28         0
-                eeprom_code                       1FB04    1FB04       3E         0
+                PIR_code                          1FA14    1FA14        A         0
+                Siren_code                        1FA40    1FA40       22         0
+                uart_code                         1FA62    1FA62       28         0
+                eeprom_code                       1FB20    1FB20       68         0
                 prompt_code                       1FD9E    1FD9E      11A         0
-                dac_code                          1FB42    1FB42       46         0
+                dac_code                          1FA8A    1FA8A       46         0
+                adc_code                          1FAD0    1FAD0       50         0
 
         CLASS   CONST          
-                data                              1FA7A    1FA7A        E         0
-                data                              1FA88    1FA88       14         0
+                data                              1FA1E    1FA1E        E         0
+                data                              1FA2C    1FA2C       14         0
                 data                              1FC0C    1FC0C       9A         0
 
         CLASS   SMALLCONST     
@@ -94,14 +94,14 @@ TOTAL           Name                               Link     Load   Length     Sp
         CLASS   MEDIUMCONST    
 
         CLASS   COMRAM         
-                udata_acs                             B        B        B         1
-                udata_acs                             0        0        B         1
-                udata_acs_ovr                        23       23        1         1
-                udata_acs                            16       16        5         1
-                udata_acs                            22       22        1         1
-                udata_acs                            1B       1B        4         1
-                udata_acs                            1F       1F        2         1
-                udata_acs                            21       21        1         1
+                udata_acs                             0        0        C         1
+                udata_acs                             C        C        B         1
+                udata_acs_ovr                        25       25        1         1
+                udata_acs                            1C       1C        5         1
+                udata_acs                            24       24        1         1
+                udata_acs                            17       17        5         1
+                udata_acs                            21       21        2         1
+                udata_acs                            23       23        1         1
 
         CLASS   ABS1           
 
@@ -156,17 +156,17 @@ TOTAL           Name                               Link     Load   Length     Sp
 
 SEGMENTS        Name                           Load    Length   Top    Selector   Space  Class
 
-                udata_acs                      000000  000024  000024         0       1  COMRAM  
+                udata_acs                      000000  000026  000026         0       1  COMRAM  
                 udata_bank4                    000400  000080  000480       400       1  BANK4   
                 udata_bank5                    000500  000080  000580       500       1  BANK5   
-                PIR_code                       01FA70  00000A  01FA7A     1FA70       0  CODE    
-                data%401                       01FA7A  00000E  01FA88      FD3D       0  CONST   
-                data%400                       01FA88  000014  01FA9C      FD44       0  CONST   
-                adc_code                       01FA9C  00001E  01FABA     1FA9C       0  CODE    
-                Siren_code                     01FABA  000022  01FADC     1FABA       0  CODE    
-                uart_code                      01FADC  000028  01FB04     1FADC       0  CODE    
-                eeprom_code                    01FB04  00003E  01FB42     1FB04       0  CODE    
-                dac_code                       01FB42  000046  01FB88     1FB42       0  CODE    
+                PIR_code                       01FA14  00000A  01FA1E     1FA14       0  CODE    
+                data%405                       01FA1E  00000E  01FA2C      FD0F       0  CONST   
+                data%404                       01FA2C  000014  01FA40      FD16       0  CONST   
+                Siren_code                     01FA40  000022  01FA62     1FA40       0  CODE    
+                uart_code                      01FA62  000028  01FA8A     1FA62       0  CODE    
+                dac_code                       01FA8A  000046  01FAD0     1FA8A       0  CODE    
+                adc_code                       01FAD0  000050  01FB20     1FAD0       0  CODE    
+                eeprom_code                    01FB20  000068  01FB88     1FB20       0  CODE    
                 multi_code                     01FB88  000084  01FC0C     1FB88       0  CODE    
                 data                           01FC0C  00009A  01FCA6      FE06       0  CONST   
                 kpd_code                       01FCA6  0000F8  01FD9E     1FCA6       0  CODE    
@@ -193,34 +193,37 @@ UNUSED ADDRESS RANGES
         BANK7            000700-0007FF              100
         BANK8            000800-0008FF              100
         BANK9            000900-0009FF              100
-        BIGRAM           0002AC-000F15              C6A
-        CODE             0002AC-01FA6F            1F7C4
-        COMRAM           000024-00005F               3C
-        CONST            0002AC-01FA6F            1F7C4
+        BIGRAM           00030E-000F15              C08
+        CODE             00030E-01FA13            1F706
+        COMRAM           000026-00005F               3A
+        CONST            00030E-01FA13            1F706
         EEDATA           F00000-F003FF              400
         IDLOC            200000-200007                8
         MEDIUMCONST      001000-00FFFF             F000
-                         011000-01FA6F             EA70
+                         011000-01FA13             EA14
         RAM              000060-0003FF              100
                          000480-0004FF               80
                          000580-000F15              100
         SFR              000F16-000FFF               4A
-        SMALLCONST       001000-01FA6F              100
+        SMALLCONST       001000-01FA13              100
 
                                   Symbol Table
 
 AA                    prompt_code   01FE54
-ADC_Read              adc_code      01FAB2
-ADC_Setup             adc_code      01FA9C
+ADC_Read              adc_code      01FB18
+ADC_Setup             adc_code      01FAD0
+ADC_Setup1            adc_code      01FAE8
+ADC_Setup2            adc_code      01FB00
 AO                    prompt_code   01FDD2
-DAC_Int_Hi            dac_code      01FB42
-DAC_Setup             dac_code      01FB62
-DATA_EE_ADDR          udata_acs     00001C
-DATA_EE_ADDRH         udata_acs     00001B
-DATA_EE_DATA          udata_acs     00001D
-Decode_r              udata_acs     000005
-EEPROM_Read           eeprom_code   01FB30
-EEPROM_Write          eeprom_code   01FB0A
+DAC_Int_Hi            dac_code      01FA8A
+DAC_Setup             dac_code      01FAAA
+DATA_EE_ADDR          udata_acs     000018
+DATA_EE_ADDRH         udata_acs     000017
+DATA_EE_DATA          udata_acs     000019
+Decode_r              udata_acs     000011
+EEPROM_Read           eeprom_code   01FB4C
+EEPROM_Refresh        eeprom_code   01FB60
+EEPROM_Write          eeprom_code   01FB26
 EP                    prompt_code   01FDB8
 KPD_READ              kpd_code      01FCD2
 LCD_Clear             lcd_code      01FF8E
@@ -232,18 +235,19 @@ LCD_Write_Message2    lcd_code      01FF1E
 LCD_delay_ms          lcd_code      01FFB6
 Multiply_16bit        multi_code    01FB88
 Multiply_824bit       multi_code    01FBD8
-PIR_Setup             PIR_code      01FA70
-Password_Counter      udata_acs     00001E
-Password_Setup        eeprom_code   01FB04
+PIR_Setup             PIR_code      01FA14
+Password_Counter      udata_acs     00001A
+Password_Counter2     udata_acs     00001B
+Password_Setup        eeprom_code   01FB20
 S                     prompt_code   01FE06
 SO                    prompt_code   01FDEC
 SP                    prompt_code   01FD9E
 SecurityON            prompt_code   01FE9E
-Siren_Setup           Siren_code    01FABA
-Siren_sound           Siren_code    01FAC4
-UART_Setup            uart_code     01FADC
-UART_Transmit_Byte    uart_code     01FAFC
-UART_Transmit_Message uart_code     01FAEE
+Siren_Setup           Siren_code    01FA40
+Siren_sound           Siren_code    01FA4A
+UART_Setup            uart_code     01FA62
+UART_Transmit_Byte    uart_code     01FA82
+UART_Transmit_Message uart_code     01FA74
 WM                    prompt_code   01FE20
 WP                    prompt_code   01FE3A
 Welcome               prompt_code   01FE98
@@ -268,7 +272,7 @@ __Hspace_4            (abs)         60000E
 __Huart_code          uart_code     000000
 __Hudata              udata         000000
 __Hudata_acs          udata_acs     000000
-__Hudata_acs_ovr      udata_acs_ovr 000024
+__Hudata_acs_ovr      udata_acs_ovr 000026
 __Hudata_bank0        udata_bank0   000000
 __Hudata_bank1        udata_bank1   000000
 __Hudata_bank10       udata_bank10  000000
@@ -306,7 +310,7 @@ __Lspace_4            (abs)         000000
 __Luart_code          uart_code     000000
 __Ludata              udata         000000
 __Ludata_acs          udata_acs     000000
-__Ludata_acs_ovr      udata_acs_ovr 000023
+__Ludata_acs_ovr      udata_acs_ovr 000025
 __Ludata_bank0        udata_bank0   000000
 __Ludata_bank1        udata_bank1   000000
 __Ludata_bank10       udata_bank10  000000
@@ -326,7 +330,7 @@ __Ludata_bank9        udata_bank9   000000
 __S0                  (abs)         020000
 __S1                  (abs)         000580
 __S3                  (abs)         000000
-depressed             udata_acs     000008
-pass_set              udata_acs     000009
-previous_pressed      udata_acs     00000A
-write_var             udata_acs     000007
+depressed             udata_acs     000014
+pass_set              udata_acs     000015
+previous_pressed      udata_acs     000016
+write_var             udata_acs     000013

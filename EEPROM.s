@@ -1,12 +1,12 @@
 #include <xc.inc>
-global EEPROM_Write, EEPROM_Read, DATA_EE_ADDRH, DATA_EE_ADDR, DATA_EE_DATA, Password_Counter, Password_Setup
+global EEPROM_Write, EEPROM_Read, DATA_EE_ADDRH, DATA_EE_ADDR, DATA_EE_DATA, Password_Counter, Password_Counter2, Password_Setup, EEPROM_Refresh
     
 psect udata_acs
 DATA_EE_ADDRH: ds 1
 DATA_EE_ADDR: ds 1
 DATA_EE_DATA: ds 1
 Password_Counter: ds 1
-    
+Password_Counter2: ds 1   
 psect	eeprom_code,class=CODE
 Password_Setup:
     movlw 0x00
@@ -38,14 +38,36 @@ EEPROM_Write:
     return
     
 EEPROM_Read:
-    MOVLW   DATA_EE_ADDRH      ;
+    MOVF   DATA_EE_ADDRH      ;
     MOVWF   EEADRH             ; Upper bits of Data Memory Address to read
-    MOVLW   DATA_EE_ADDR       ;
+    MOVF   DATA_EE_ADDR       ;
     MOVWF   EEADR              ; Lower bits of Data Memory Address to read
     BCF     EECON1, 0x07      ; Point to DATA memory
     BCF     EECON1, 0x06       ; Access EEPROM
     BSF     EECON1, 0x00         ; EEPROM Read
     NOP
     MOVF    EEDATA, W          ; W = EEDATA
-
-
+    return
+    
+EEPROM_Refresh:
+    CLRF    EEADR              ; Start at address 0
+    CLRF    EEADRH             ;
+    BCF     EECON1, 0x06       ; Set for memory
+    BCF     EECON1, 0x07      ; Set for Data EEPROM
+    BCF     INTCON, 0x07        ; Disable interrupts
+    BSF     EECON1, 0x02       ; Enable writes
+LOOP:                              ; Loop to refresh array
+    BSF     EECON1, 0x00         ; Read current address
+    MOVLW   0x55               ;
+    MOVWF   EECON2             ; Write 55h
+    MOVLW   0xAA               ;
+    MOVWF   EECON2             ; Write 0AAh
+    BSF     EECON1, 0x01         ; Set WR bit to begin write
+    BTFSC   EECON1, 0x01         ; Wait for write to complete
+    BRA     $-2
+    INCFSZ  EEADR, F           ; Increment address
+    BRA     LOOP               ; Not zero, do it again
+    INCFSZ  EEADRH, F          ; Increment the high address
+    BRA     LOOP               ; Not zero, do it again
+    BCF     EECON1, 0x02       ; Disable writes
+    BSF     INTCON, 0x07        ; Enable interrupts
